@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model area {
+  id   Int    @id(map: "PK__area__3213E83F1BF4BAAB") @default(autoincrement())
+  name String @db.VarChar(150)
+}
+
+model assignments {
+  id              Int       @id(map: "PK__assignme__3213E83F6A5FCEC3") @default(autoincrement())
+  user_id         Int
+  task_id         Int
+  assignment_date DateTime  @db.Date
+  start_date      DateTime? @db.Date
+  final_date      DateTime? @db.Date
+  task            task      @relation(fields: [task_id], references: [id], onUpdate: NoAction, map: "FK__assignmen__task___00200768")
+  users           users     @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK__assignmen__user___7F2BE32F")
+}
+
+model profile {
+  id          Int     @id(map: "PK__profile__3213E83FC204D5E5") @default(autoincrement())
+  name        String  @db.VarChar(150)
+  description String? @db.VarChar(150)
+  users       users[]
+}
+
+model task {
+  id              Int           @id(map: "PK__task__3213E83F7ADD541E") @default(autoincrement())
+  request_date    DateTime?     @db.Date
+  conclusion_date DateTime?     @db.Date
+  description     String?       @db.VarChar(250)
+  protocol        String?       @db.VarChar(150)
+  requester       String?       @db.VarChar(250)
+  phone           String?       @db.VarChar(50)
+  cpf             String?       @db.VarChar(15)
+  contract        String?       @db.VarChar(12)
+  uf              String?       @db.VarChar(2)
+  type_id         Int
+  concluded       Int           @default(0, map: "DF__task__concluded__04E4BC85")
+  assigned        Int           @default(0, map: "DF__task__assigned__05D8E0BE")
+  taskType        taskType      @relation(fields: [type_id], references: [id], onUpdate: NoAction, map: "FK__task__type_id__66603565")
+  assignments     assignments[]
+}
+
+model taskType {
+  id          Int         @id(map: "PK__taskType__3213E83F2E441CBF") @default(autoincrement())
+  code        String      @db.VarChar(20)
+  description String?     @db.VarChar(150)
+  task        task[]
+  userSkill   userSkill[]
+}
+
+model users {
+  id            Int           @id(map: "PK__users__3213E83F2DEB111B") @default(autoincrement())
+  username      String        @db.VarChar(50)
+  password      String        @db.VarChar(255)
+  cpf           String        @db.VarChar(11)
+  name          String        @db.VarChar(250)
+  birth_date    DateTime?     @db.Date
+  supervisor_id Int?
+  profile_id    Int
+  profile       profile       @relation(fields: [profile_id], references: [id], onUpdate: NoAction, map: "FK__users__profile_i__7C4F7684")
+  users         users?        @relation("usersTousers_supervisor_id", fields: [supervisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK__users__superviso__7B5B524B")
+  assignments   assignments[]
+  other_users   users[]       @relation("usersTousers_supervisor_id")
+  userSkill     userSkill[]
+}
+
+model userSkill {
+  id           Int      @id(map: "PK__userSkil__3213E83FB4994FBE") @default(autoincrement())
+  user_id      Int
+  task_type_id Int
+  taskType     taskType @relation(fields: [task_type_id], references: [id], onUpdate: NoAction, map: "FK__userSkill__task___03F0984C")
+  users        users    @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK__userSkill__user___02FC7413")
+}
