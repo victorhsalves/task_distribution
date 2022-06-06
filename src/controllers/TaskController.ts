@@ -12,6 +12,7 @@ class TaskController {
                     type_id: parseInt(taskType.toString())
                 }
             })
+            console.log(tasks.length)
             return response.json(tasks)
         }
         else {
@@ -128,6 +129,20 @@ class TaskController {
         //     // return maximum value we get by picking or leaving the current item
         //     return Math.max(include, exclude);
           
+    }
+
+    async deleteAssignment(request: Request, response: Response) {
+        const { assignmentId } = request.body;
+
+        await prisma.assignments.delete({
+            where: {
+                id: assignmentId
+            }
+        }).then(() => {
+            return response.status(200).json({message:'Atribuição deletada com sucesso!'})
+        }).catch((err) => {
+            return response.status(500).json({message:'Erro ao deletar atribuição!', erro: err})
+        })
     }
 }
 

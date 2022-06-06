@@ -9,16 +9,16 @@ router.get('/teste', () => {
     console.log('Testado')
     return 'Testado'
 })
+
 router.get('/tasks/:uf?', new AuthController().ValidateJwt, new TaskController().getAll)
-
-router.post('/createUser', new UserController().createUser)
-
 router.get('/getUsers', new UserController().getUser)
 
-router.post('/createAssignment', new TaskController().assingnToUserManually)
-
-router.post('/multiAssignment', new TaskController().multiAssingment)
-
 router.post('/login', new AuthController().DoLogin)
+router.post('/logout', new AuthController().DoLogout)
+router.post('/createAssignment', new TaskController().assingnToUserManually)
+router.post('/multiAssignment', new TaskController().multiAssingment)
+router.post('/createUser', new UserController().createUser)
+
+router.delete('/deleteAssignment/:assignmentId', new AuthController().ValidateJwt, new TaskController().deleteAssignment)
 
 export { router }
