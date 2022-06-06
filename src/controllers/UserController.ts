@@ -1,18 +1,11 @@
 import prisma from "../prisma"
 import { Request , Response } from "express"
+import bcrypt from 'bcrypt'
 
 
 class UserController {
     async createUser(request: Request, response: Response) {
-        const {
-            username,
-            password,
-            cpf,
-            name,
-            birth_date,
-            supervisor_id,
-            profile_id
-        } = request.body;
+        const { username, password, cpf, name, birth_date, supervisor_id, profile_id } = request.body;
 
         const user = await prisma.users.findFirst({
             where: {
@@ -29,25 +22,25 @@ class UserController {
             return response.status(200).json({message:'Usuário já cadastrado!'})
         }
         else{
-
-            try {
-                await prisma.users.create({
-                    data: {
-                        username: username,
-                        password: password,
-                        cpf: cpf,
-                        name: name,
-                        birth_date: new Date(birth_date),
-                        supervisor_id: supervisor_id,
-                        profile_id: profile_id
-                    }
-                })
+            const salt = await bcrypt.genSalt(6);
+            const hashedPwd = await bcrypt.hash(password, salt);
+            
+            await prisma.users.create({
+                data: {
+                    username: username,
+                    password: hashedPwd,
+                    cpf: cpf,
+                    name: name,
+                    birth_date: new Date(birth_date),
+                    supervisor_id: supervisor_id,
+                    profile_id: profile_id
+                }
+            }).then(() => {
                 return response.status(200).json(user)
-            }
-            catch(err){
+            }).catch((err) => {
                 console.log(err)
-                return response.status(500).json(err)
-            }
+                return response.status(500).json({message: 'Erro ao criar usuário!', erro:err})
+            })
         }
     }
 
