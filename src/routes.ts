@@ -5,13 +5,11 @@ import { AuthController } from "./controllers/AuthController"
 
 const router = Router();
 
-router.get('/teste', () => {
-    console.log('Testado')
-    return 'Testado'
-})
+router.get('/teste', new TaskController().getAssigments)
 
 router.get('/tasks/:uf?', new AuthController().ValidateJwt, new TaskController().getAll)
 router.get('/getUsers', new UserController().getUser)
+
 
 router.post('/login', new AuthController().DoLogin)
 router.post('/logout', new AuthController().DoLogout)

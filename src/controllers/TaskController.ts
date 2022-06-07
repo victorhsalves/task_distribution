@@ -23,7 +23,7 @@ class TaskController {
 
     async assingnToUserManually(request: Request, response: Response) {
         const { username , taskId } = request.body;
-        const date = new Date();
+        const date = new Date();        
 
         const user = await prisma.users.findFirst({
             where: {
@@ -33,8 +33,6 @@ class TaskController {
                 id: true
             }
         })
-        
-        console.log(date)
 
         const assignment = await prisma.assignments.findFirst({
             where:{
@@ -79,9 +77,6 @@ class TaskController {
                 message: 'Não foi possível atribuir a atividade!'
             })
         }
-
-        
-
     }
 
     async multiAssingment(request: Request, response: Response) {
@@ -100,7 +95,7 @@ class TaskController {
         return response.status(200).json(users)
     }
 
-    async autoAssign(request: Request, response: Response) {
+    async autoAssignment(request: Request, response: Response) {
         const tasks = await prisma.task.findMany({
             where: {
                 assigned: 0
@@ -143,6 +138,44 @@ class TaskController {
         }).catch((err) => {
             return response.status(500).json({message:'Erro ao deletar atribuição!', erro: err})
         })
+    }
+
+    async getAssigments(request: Request, response: Response) {
+        const { username , taskType } = request.query;
+
+        var queryArgs = {
+            where: {}
+        }
+
+        if (username != null) {
+            queryArgs = {
+                where: {
+                    users: {
+                        username: username
+                    }
+                }
+            }
+        }
+        if (taskType != null) {
+            queryArgs = {
+                where: {
+                    ...queryArgs.where,
+                    task: {
+                        type_id: parseInt(taskType.toString())
+                    }
+                }
+            }
+        }
+
+        const assignments = await prisma.assignments.findMany({
+            where: {
+                ...queryArgs.where
+            }
+        }).catch((error) => {
+            return response.status(500).json({error:error})
+        })
+
+        return response.json(assignments)
     }
 }
 
