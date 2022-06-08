@@ -12,7 +12,6 @@ class TaskController {
                     type_id: parseInt(taskType.toString())
                 }
             })
-            console.log(tasks.length)
             return response.json(tasks)
         }
         else {

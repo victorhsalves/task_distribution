@@ -12,16 +12,24 @@ class AuthController {
         const user = await prisma.users.findFirst({
             where: {
                 username: username
+            },
+            include: {
+                profile: {
+                    select: {
+                        name: true
+                    }
+                }
             }
         })
 
         if (user != null) {
             if (await bcrypt.compare(password, user.password)) {
-                if (!process.env.SECRET) response.status(500).json({ message: 'Server couldnot decode token.' })
+                if (!process.env.SECRET) response.status(500).json({ message: 'Server could not decode token.' })
                 var secret: jwt.Secret = String(process.env.SECRET);
 
                 const id = user.username; 
-                const token = jwt.sign({ id }, secret, {
+                const profile = user.profile.name
+                const token = jwt.sign({ id , profile }, secret, {
                     expiresIn: 3000 // expires in 5min
                 });
 
@@ -47,6 +55,7 @@ class AuthController {
 
         try {
             var dec = jwt.verify(token, String(process.env.SECRET));
+            console.log(dec)
             response.status(201);
             next()
 
