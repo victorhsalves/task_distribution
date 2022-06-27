@@ -6,8 +6,10 @@ import bcrypt from 'bcrypt'
 
 class AuthController {
 
-    async DoLogin(request: Request, response: Response, next: NextFunction) {
+    async doLogin(request: Request, response: Response, next: NextFunction) {
         const { username, password } = request.body;
+        console.log(username)
+        console.log(password)
 
         const user = await prisma.users.findFirst({
             where: {
@@ -27,11 +29,30 @@ class AuthController {
                 if (!process.env.SECRET) response.status(500).json({ message: 'Server could not decode token.' })
                 var secret: jwt.Secret = String(process.env.SECRET);
 
-                const id = user.username; 
+                const id = user.username;
                 const profile = user.profile.name
-                const token = jwt.sign({ id , profile }, secret, {
+                const token = jwt.sign({ id, profile }, secret, {
                     expiresIn: 3000 // expires in 5min
                 });
+
+                const userLogin = await prisma.userLogin.findFirst({
+                    where: {
+                        users: {
+                            username: id
+                        },
+                        session_date: {
+                            gte: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0)
+                        }
+                    }
+                })
+                if (!userLogin) {
+                    await prisma.userLogin.create({
+                        data: {
+                            user_id: user.id,
+                            available: 1
+                        }
+                    })
+                }
 
                 return response.status(200).cookie('auth-token', 'Bearer ' + token, { expires: new Date(Date.now() + 50 * 60 * 1000) }).json({ auth: true, token: token });
             }
@@ -40,13 +61,40 @@ class AuthController {
         }
     }
 
-
-    DoLogout(request: Request, response: Response, next: NextFunction) {
-        return response.status(200).cookie('auth-token', '').json({ auth: false, token: '' });
+    async doLogout(request: Request, response: Response, next: NextFunction) {
+        var token = request.cookies['auth-token'];
+        if (!token) return response.status(401).json({ auth: false, message: 'No token provided.' });
+        token = token.substring(7);
+        try {
+            var decoded = jwt.verify(token, String(process.env.SECRET));
+            console.log(decoded)
+            console.log((<any>decoded).id)
+            const login = await prisma.userLogin.findFirst({
+                where: {
+                    users: {
+                        username: (<any>decoded).id
+                    }
+                }
+            })
+    
+            if (login) {
+                await prisma.userLogin.delete({
+                    where: {
+                        id: login.id
+                    }
+                })
+            }
+            return response.status(200).cookie('auth-token', '').json({ auth: false, token: '' });
+        } catch (error) {
+            response.status(401).json(error)
+        }
+        
     }
 
-    ValidateJwt(request: Request, response: Response, next: NextFunction) {
-        var token = request.cookies['auth-token'];
+    validateJwt(request: Request, response: Response, next: NextFunction) {
+        // var token = request.cookies['auth-token'];
+        var token = request.headers.authorization;
+        console.log(token)
 
         if (!token) return response.status(401).json({ auth: false, message: 'No token provided.' });
 
@@ -56,6 +104,7 @@ class AuthController {
         try {
             var dec = jwt.verify(token, String(process.env.SECRET));
             console.log(dec)
+            console.log((<any>dec).id)
             response.status(201);
             next()
 
@@ -64,6 +113,27 @@ class AuthController {
         }
 
     }
+
+    async getLoggedUsers(request: Request, response: Response, next: NextFunction) { 
+        const loggedUsers = await prisma.userLogin.findMany({
+            where: {
+                session_date: {
+                    gte: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0)
+                }
+            },
+            include: {
+                users: {
+                    select: {
+                        username: true,
+                        name: true
+                    }
+                }
+            }
+        })
+
+        return response.status(200).json(loggedUsers)
+    }
+
 }
 
 export { AuthController };

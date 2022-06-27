@@ -1,9 +1,26 @@
 import prisma from "../prisma"
-import { Request , Response } from "express"
+import { Roles } from "../utils/Roles";
+import { NextFunction, Request, Response } from "express"
 import bcrypt from 'bcrypt'
 
 
 class UserController {
+
+    // async grantAccess(action: String, resource: String, req: Request, res: Response , next: NextFunction) {
+    //     const { role } = req.body;
+    //     try {
+    //         const permission = Roles.can(role)[action](resource);
+    //         if (!permission.granted) {
+    //             return res.status(401).json({
+    //                 error: "You don't have enough permission to perform this action"
+    //             });
+    //         }
+    //         next()
+    //     } catch (error) {
+    //         next(error)
+    //     }
+    // }
+
     async createUser(request: Request, response: Response) {
         const { username, password, cpf, name, birth_date, supervisor_id, profile_id } = request.body;
 
@@ -15,16 +32,17 @@ class UserController {
                 {
                     cpf: cpf
                 }
-            ]}
+                ]
+            }
         })
 
         if (user) {
-            return response.status(200).json({message:'Usuário já cadastrado!'})
+            return response.status(200).json({ message: 'Usuário já cadastrado!' })
         }
-        else{
+        else {
             const salt = await bcrypt.genSalt(6);
             const hashedPwd = await bcrypt.hash(password, salt);
-            
+
             await prisma.users.create({
                 data: {
                     username: username,
@@ -39,13 +57,13 @@ class UserController {
                 return response.status(200).json(user)
             }).catch((err) => {
                 console.log(err)
-                return response.status(500).json({message: 'Erro ao criar usuário!', erro:err})
+                return response.status(500).json({ message: 'Erro ao criar usuário!', erro: err })
             })
         }
     }
 
     async getUser(request: Request, response: Response) {
-        const { username , cpf } = request.query;
+        const { username, cpf } = request.query;
 
         const users = await prisma.users.findMany({
             where: {

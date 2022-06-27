@@ -13,21 +13,22 @@ model area {
 }
 
 model assignments {
-  id              Int       @id(map: "PK__assignme__3213E83F6A5FCEC3") @default(autoincrement())
+  id              Int       @id(map: "PK__assignme__3213E83F4D3BB5E6") @default(autoincrement())
   user_id         Int
   task_id         Int
-  assignment_date DateTime  @db.Date
-  start_date      DateTime? @db.Date
-  final_date      DateTime? @db.Date
-  task            task      @relation(fields: [task_id], references: [id], onUpdate: NoAction, map: "FK__assignmen__task___00200768")
-  users           users     @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK__assignmen__user___7F2BE32F")
+  assignment_date DateTime  @db.DateTime
+  start_date      DateTime? @db.DateTime
+  final_date      DateTime? @db.DateTime
+  task            task      @relation(fields: [task_id], references: [id], onUpdate: NoAction, map: "FK__assignmen__task___09A971A2")
+  users           users     @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK__assignmen__user___08B54D69")
 }
 
 model profile {
-  id          Int     @id(map: "PK__profile__3213E83FC204D5E5") @default(autoincrement())
-  name        String  @db.VarChar(150)
-  description String? @db.VarChar(150)
-  users       users[]
+  id             Int              @id(map: "PK__profile__3213E83FC204D5E5") @default(autoincrement())
+  name           String           @db.VarChar(150)
+  description    String?          @db.VarChar(150)
+  userPermission userPermission[]
+  users          users[]
 }
 
 model task {
@@ -68,6 +69,7 @@ model users {
   profile       profile       @relation(fields: [profile_id], references: [id], onUpdate: NoAction, map: "FK__users__profile_i__7C4F7684")
   users         users?        @relation("usersTousers_supervisor_id", fields: [supervisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK__users__superviso__7B5B524B")
   assignments   assignments[]
+  userLogin     userLogin[]
   other_users   users[]       @relation("usersTousers_supervisor_id")
   userSkill     userSkill[]
 }
@@ -78,4 +80,19 @@ model userSkill {
   task_type_id Int
   taskType     taskType @relation(fields: [task_type_id], references: [id], onUpdate: NoAction, map: "FK__userSkill__task___03F0984C")
   users        users    @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK__userSkill__user___02FC7413")
+}
+
+model userPermission {
+  id         Int     @id(map: "PK__userPerm__3213E83F96BB6D4E") @default(autoincrement())
+  profile_id Int
+  page       String  @db.VarChar(150)
+  profile    profile @relation(fields: [profile_id], references: [id], onUpdate: NoAction, map: "FK__userPermi__profi__0F624AF8")
+}
+
+model userLogin {
+  id           Int       @id(map: "PK__userLogi__3213E83F7D212349") @default(autoincrement())
+  user_id      Int
+  available    Int       @default(0, map: "DF__userLogin__avail__160F4887")
+  session_date DateTime? @default(now(), map: "DF__userLogin__sessi__17036CC0") @db.DateTime
+  users        users     @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK__userLogin__user___17F790F9")
 }

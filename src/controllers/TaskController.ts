@@ -3,6 +3,17 @@ import { Request , Response } from "express"
 
 
 class TaskController {
+    async test (request: Request, response: Response) {
+        const q = request.query;
+        const p = request.params;
+        const b = request.body;
+        console.log(q)
+        
+        console.log(p)
+        
+        console.log(b)
+    }
+    
     async getAll(request: Request, response: Response) {
         const { uf , taskType } = request.query;
 
@@ -17,6 +28,16 @@ class TaskController {
         else {
             const tasks = await prisma.task.findMany({})
             return response.json(tasks)
+        }
+    }
+
+    async getTypes(request: Request, response: Response) {
+        const types = await prisma.taskType.findMany();
+        if (types) {
+            return response.status(200).json(types);
+        }
+        else {
+            return response.status(404).json({error:'Nenhum tipo encontrado'})
         }
     }
 
@@ -140,41 +161,24 @@ class TaskController {
     }
 
     async getAssigments(request: Request, response: Response) {
-        const { username , taskType } = request.query;
+        const { username , taskType } = request.params;
+        if (username) {
 
-        var queryArgs = {
-            where: {}
-        }
-
-        if (username != null) {
-            queryArgs = {
+            const assignments = await prisma.assignments.findMany({
                 where: {
                     users: {
                         username: username
                     }
                 }
-            }
+            }).catch((error) => {
+                return response.status(500).json({error:error})
+            })
+    
+            return response.json(assignments)
         }
-        if (taskType != null) {
-            queryArgs = {
-                where: {
-                    ...queryArgs.where,
-                    task: {
-                        type_id: parseInt(taskType.toString())
-                    }
-                }
-            }
+        else {
+            return response.status(500).json({error:"Informe um usuário!"})
         }
-
-        const assignments = await prisma.assignments.findMany({
-            where: {
-                ...queryArgs.where
-            }
-        }).catch((error) => {
-            return response.status(500).json({error:error})
-        })
-
-        return response.json(assignments)
     }
 }
 
