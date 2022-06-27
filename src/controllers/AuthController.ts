@@ -20,6 +20,11 @@ class AuthController {
                     select: {
                         name: true
                     }
+                },
+                users: {
+                    select: {
+                        name: true
+                    }
                 }
             }
         })
@@ -29,16 +34,20 @@ class AuthController {
                 if (!process.env.SECRET) response.status(500).json({ message: 'Server could not decode token.' })
                 var secret: jwt.Secret = String(process.env.SECRET);
 
-                const id = user.username;
-                const profile = user.profile.name
-                const token = jwt.sign({ id, profile }, secret, {
+                const token = jwt.sign(
+                    { 
+                        username: user.username, 
+                        profile: user.profile.name, 
+                        name: user.name,
+                        supervisor: user.users?.name
+                    }, secret, {
                     expiresIn: 3000 // expires in 5min
                 });
 
                 const userLogin = await prisma.userLogin.findFirst({
                     where: {
                         users: {
-                            username: id
+                            username: user.username
                         },
                         session_date: {
                             gte: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0)
@@ -53,7 +62,8 @@ class AuthController {
                         }
                     })
                 }
-
+                console.log(response.cookie)
+                console.log(token)
                 return response.status(200).cookie('auth-token', 'Bearer ' + token, { expires: new Date(Date.now() + 50 * 60 * 1000) }).json({ auth: true, token: token });
             }
 
@@ -62,17 +72,18 @@ class AuthController {
     }
 
     async doLogout(request: Request, response: Response, next: NextFunction) {
-        var token = request.cookies['auth-token'];
+        var token = request.body.headers['Authorization'];
+        
         if (!token) return response.status(401).json({ auth: false, message: 'No token provided.' });
         token = token.substring(7);
         try {
             var decoded = jwt.verify(token, String(process.env.SECRET));
             console.log(decoded)
-            console.log((<any>decoded).id)
+            console.log((<any>decoded).username)
             const login = await prisma.userLogin.findFirst({
                 where: {
                     users: {
-                        username: (<any>decoded).id
+                        username: (<any>decoded).username
                     }
                 }
             })
