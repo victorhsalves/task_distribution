@@ -24,11 +24,12 @@ model assignments {
 }
 
 model profile {
-  id             Int              @id(map: "PK__profile__3213E83FC204D5E5") @default(autoincrement())
-  name           String           @db.VarChar(150)
-  description    String?          @db.VarChar(150)
-  userPermission userPermission[]
-  users          users[]
+  id                Int                 @id(map: "PK__profile__3213E83FC204D5E5") @default(autoincrement())
+  name              String              @db.VarChar(150)
+  description       String?             @db.VarChar(150)
+  profilePermission profilePermission[]
+  userPermission    userPermission[]
+  users             users[]
 }
 
 model task {
@@ -45,6 +46,7 @@ model task {
   type_id         Int
   concluded       Int           @default(0, map: "DF__task__concluded__04E4BC85")
   assigned        Int           @default(0, map: "DF__task__assigned__05D8E0BE")
+  original_id     Int?
   taskType        taskType      @relation(fields: [type_id], references: [id], onUpdate: NoAction, map: "FK__task__type_id__66603565")
   assignments     assignments[]
 }
@@ -95,4 +97,11 @@ model userLogin {
   available    Int       @default(0, map: "DF__userLogin__avail__160F4887")
   session_date DateTime? @default(now(), map: "DF__userLogin__sessi__17036CC0") @db.DateTime
   users        users     @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "FK__userLogin__user___17F790F9")
+}
+
+model profilePermission {
+  id         Int     @id(map: "PK__profileP__3213E83FB10F216A") @default(autoincrement())
+  profile_id Int
+  page       String? @db.VarChar(150)
+  profile    profile @relation(fields: [profile_id], references: [id], onUpdate: NoAction, map: "FK__profilePe__profi__1BC821DD")
 }

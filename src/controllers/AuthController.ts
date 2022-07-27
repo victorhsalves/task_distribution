@@ -41,7 +41,7 @@ class AuthController {
                         name: user.name,
                         supervisor: user.users?.name
                     }, secret, {
-                    expiresIn: 3000 // expires in 5min
+                    expiresIn: '1 day' // expires in 5min
                 });
 
                 const userLogin = await prisma.userLogin.findFirst({
@@ -102,9 +102,8 @@ class AuthController {
         
     }
 
-    validateJwt(request: Request, response: Response, next: NextFunction) {
-        // var token = request.cookies['auth-token'];
-        var token = request.headers.authorization;
+    async validateJwt(request: Request, response: Response, next: NextFunction) {
+        var token = request.body.headers['Authorization'];
         console.log(token)
 
         if (!token) return response.status(401).json({ auth: false, message: 'No token provided.' });
@@ -114,8 +113,17 @@ class AuthController {
 
         try {
             var dec = jwt.verify(token, String(process.env.SECRET));
+
+            const permissions = await prisma.userPermission.findFirst({
+                where: {
+                    profile:{
+                        name: (<any>dec).profile
+                    }
+                }
+            })
+            
+
             console.log(dec)
-            console.log((<any>dec).id)
             response.status(201);
             next()
 
@@ -126,24 +134,66 @@ class AuthController {
     }
 
     async getLoggedUsers(request: Request, response: Response, next: NextFunction) { 
-        const loggedUsers = await prisma.userLogin.findMany({
-            where: {
-                session_date: {
-                    gte: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0)
-                }
-            },
-            include: {
-                users: {
-                    select: {
-                        username: true,
-                        name: true
-                    }
-                }
-            }
-        })
+        const { username, profile } = request.query;
+        console.log(request.params)
+        console.log(request.query)
+        console.log(username)
+        console.log(profile)
 
-        return response.status(200).json(loggedUsers)
+        if (profile) {
+            if ((<string>profile) in ['ANALISTA', 'ADMIN']) {
+                const loggedUsers = await prisma.userLogin.findMany({
+                    where: {
+                        session_date: {
+                            gte: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0)
+                        }
+                    },
+                    include: {
+                        users: {
+                            select: {
+                                username: true,
+                                name: true
+                            }
+                        }
+                    }
+                })
+                return response.status(200).json(loggedUsers)
+            }else if (profile == 'SUPERVISOR' && username){
+                const loggedUsers = await prisma.userLogin.findMany({
+                    where: {
+                        session_date: {
+                            gte: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0)
+                        },
+                        users: {
+                            users: {
+                                username: username.toString()
+                            }
+                        }
+                    },
+                    include: {
+                        users: {
+                            select: {
+                                username: true,
+                                name: true
+                            }
+                        }
+                    }
+                })
+                return response.status(200).json(loggedUsers)
+            }
+        }
+        else {
+            return response.status(401).json('unauthorized')
+        }
     }
+
+    async checkRolePermission(request: Request, response: Response, next: NextFunction) {
+        var token = request.headers.authorization;
+        if (!token) return response.status(401).json({ auth: false, message: 'No token provided.' });
+
+    }
+
+
 
 }
 

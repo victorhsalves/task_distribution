@@ -95,6 +95,57 @@ class UserController {
         if (users) {
             return response.status(200).json(users)
         }
+        else {
+            return response.status(404).json('no users found!')
+        }
+    }
+
+    async setAvailability(request: Request, response: Response) {
+        const { userList, availability } = request.body;
+
+        console.log('body')
+        console.log(userList)
+        console.log(availability)
+        if (availability == true) {
+            try {
+                const updatedUserLogin = await prisma.userLogin.updateMany({
+                    where: {
+                        id: {
+                            in: userList
+                        }
+                    },
+                    data: {
+                        available: 1
+                    }
+                })
+                console.log('ok false')
+                return response.status(200).json({ message: 'Usuários agora estão disponíveis!' })
+            } catch (error) {
+                console.log(error)
+                return response.status(500).json({ error: error })
+            }
+        } else if (availability == false) {
+            try {
+                const updatedUserLogin = await prisma.userLogin.updateMany({
+                    where: {
+                        id: {
+                            in: userList
+                        }
+                    },
+                    data: {
+                        available: 0
+                    }
+                })
+                console.log('ok false')
+                return response.status(200).json({ message: 'Usuários agora estão indisponíveis!' })
+            } catch (error) {
+                console.log(error)
+                return response.status(500).json({ error: error })
+            }
+
+        } else {
+            console.log('algo errado')
+        }
     }
 }
 
